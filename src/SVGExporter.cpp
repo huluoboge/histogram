@@ -223,4 +223,86 @@ std::string SVGExporter::formatFloat(float value, int precision) {
     return ss.str();
 }
 
+void SVGExporter::exportHistogramWithPeaks(const Histogram& hist,
+                                          const std::vector<std::tuple<size_t, size_t, std::pair<float, float>>>& peaksInfo,
+                                          const std::string& filename,
+                                          int width,
+                                          int height,
+                                          const std::string& title) {
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Cannot open file: " + filename);
+    }
+    
+    int margin = 80;
+    int chartWidth = width - 2 * margin;
+    int chartHeight = height - 2 * margin;
+    
+    const auto& binCounts = hist.getBinCounts();
+    if (binCounts.empty()) {
+        throw std::runtime_error("Histogram has no data");
+    }
+    
+    // 找到最大计数值
+    size_t maxCount = *std::max_element(binCounts.begin(), binCounts.end());
+    if (maxCount == 0) maxCount = 1;
+    
+    file << createSVGHeader(width, height, title);
+    
+    // 创建坐标轴
+    file << createAxes(chartWidth, chartHeight, margin,
+                      hist.getMin(), hist.getMax(), 0, maxCount,
+                      "Value", "Count");
+    
+    // 绘制直方图柱子
+    float binWidth = static_cast<float>(chartWidth) / hist.getResolution();
+    for (size_t i = 0; i < hist.getResolution(); ++i) {
+        if (binCounts[i] > 0) {
+            float x = margin + i * binWidth;
+            float barHeight = (static_cast<float>(binCounts[i]) / maxCount) * chartHeight;
+            float y = margin + chartHeight - barHeight;
+            
+            file << "<rect x=\"" << x << "\" y=\"" << y << "\" "
+                 << "width=\"" << binWidth - 1 << "\" height=\"" << barHeight << "\" "
+                 << "fill=\"steelblue\" stroke=\"none\"/>\n";
+        }
+    }
+    
+    // 标记波峰
+    if (!peaksInfo.empty()) {
+        for (const auto& peak : peaksInfo) {
+            size_t index = std::get<0>(peak);
+            size_t count = std::get<1>(peak);
+            auto range = std::get<2>(peak);
+            
+            float x = margin + index * binWidth + binWidth / 2;
+            float barHeight = (static_cast<float>(count) / maxCount) * chartHeight;
+            float y = margin + chartHeight - barHeight;
+            
+            // 绘制波峰标记（红色三角形）
+            float markerSize = 10.0f;
+            file << "<polygon points=\""
+                 << x << "," << y - markerSize << " "
+                 << x - markerSize/2 << "," << y << " "
+                 << x + markerSize/2 << "," << y
+                 << "\" fill=\"red\" stroke=\"darkred\" stroke-width=\"1\"/>\n";
+            
+            // 添加波峰信息文本
+            float center = (range.first + range.second) / 2.0f;
+            file << "<text x=\"" << x << "\" y=\"" << y - markerSize - 5 << "\" "
+                 << "text-anchor=\"middle\" font-size=\"12\" font-family=\"Arial\" "
+                 << "fill=\"darkred\" font-weight=\"bold\">"
+                 << "Peak: " << formatFloat(center, 2) << "</text>\n";
+        }
+        
+        // 添加图例
+        file << "<text x=\"" << width - margin << "\" y=\"" << margin - 20 << "\" "
+             << "text-anchor=\"end\" font-size=\"14\" font-family=\"Arial\" "
+             << "fill=\"darkred\" font-weight=\"bold\">"
+             << "Detected Peaks: " << peaksInfo.size() << "</text>\n";
+    }
+    
+    file << createSVGFooter();
+}
+
 } // namespace histogram

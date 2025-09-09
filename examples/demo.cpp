@@ -30,6 +30,12 @@ int main() {
     std::cout << "   - Bin width: " << hist.getBinWidth() << "\n";
     std::cout << "   - Range: [" << hist.getMin() << ", " << hist.getMax() << "]\n";
     
+    // 显示最大bin信息
+    auto maxBin = hist.getMaxBin();
+    auto binRange = hist.getBinRange(maxBin.second);
+    std::cout << "   - Max bin count: " << maxBin.first << " (bin " << maxBin.second 
+              << ", range [" << binRange.first << ", " << binRange.second << "])\n";
+    
     // 4. 计算CDF
     std::cout << "4. Computing Cumulative Distribution Function...\n";
     histogram::CDF cdf;

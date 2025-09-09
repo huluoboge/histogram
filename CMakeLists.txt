@@ -34,6 +34,15 @@ add_test(NAME histogram_tests COMMAND test_histogram)
 add_executable(demo examples/demo.cpp)
 target_link_libraries(demo histogram)
 
+add_executable(peak_detection examples/peak_detection.cpp)
+target_link_libraries(peak_detection histogram)
+
+add_executable(peak_detection_advanced examples/peak_detection_advanced.cpp)
+target_link_libraries(peak_detection_advanced histogram)
+
+add_executable(peak_visualization examples/peak_visualization.cpp)
+target_link_libraries(peak_visualization histogram)
+
 # 安装配置
 install(TARGETS histogram DESTINATION lib)
 install(DIRECTORY include/histogram DESTINATION include)

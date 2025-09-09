@@ -53,6 +53,22 @@ public:
                                        int width = 800,
                                        int height = 600,
                                        const std::string& title = "Filtered Histogram");
+    
+    /**
+     * @brief 导出带波峰标记的直方图到SVG
+     * @param hist 直方图对象
+     * @param peaksInfo 波峰信息向量
+     * @param filename 输出文件名
+     * @param width SVG宽度
+     * @param height SVG高度
+     * @param title 图表标题
+     */
+    static void exportHistogramWithPeaks(const Histogram& hist,
+                                        const std::vector<std::tuple<size_t, size_t, std::pair<float, float>>>& peaksInfo,
+                                        const std::string& filename,
+                                        int width = 800,
+                                        int height = 600,
+                                        const std::string& title = "Histogram with Peaks");
 
 private:
     /**

@@ -5,9 +5,15 @@
 #include "histogram/SVGExporter.hpp"
 #include <vector>
 #include <random>
-#include <filesystem>
+#include <tuple>
 
+#if __has_include(<filesystem>)
+#include <filesystem>
 namespace fs = std::filesystem;
+#else
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#endif
 
 class HistogramTest : public ::testing::Test {
 protected:
@@ -162,6 +168,92 @@ TEST_F(HistogramTest, GaussianFilterParameters) {
     
     histogram::GaussianFilter filter(1.0f);
     EXPECT_THROW(filter.setSigma(0.0f), std::invalid_argument);
+}
+
+// 测试波峰检测功能
+TEST_F(HistogramTest, PeakDetection) {
+    // 创建多峰值直方图
+    histogram::Histogram hist(0.0f, 20.0f, 40);
+    
+    // 生成三个正态分布的混合数据
+    std::mt19937 gen(123);
+    std::normal_distribution<float> dist1(4.0f, 0.8f);
+    std::normal_distribution<float> dist2(10.0f, 1.2f);
+    std::normal_distribution<float> dist3(16.0f, 0.9f);
+    
+    for (int i = 0; i < 400; ++i) hist.addData(dist1(gen));
+    for (int i = 0; i < 600; ++i) hist.addData(dist2(gen));
+    for (int i = 0; i < 500; ++i) hist.addData(dist3(gen));
+    
+    // 检测波峰
+    auto peaks = hist.findPeaks(0.05f);
+    auto peaksInfo = hist.getPeaksInfo(0.05f);
+    
+    // 应该检测到至少2个波峰
+    EXPECT_GE(peaks.size(), 2);
+    EXPECT_GE(peaksInfo.size(), 2);
+    
+    // 检查波峰信息格式
+    for (const auto& peak : peaksInfo) {
+        size_t index = std::get<0>(peak);
+        size_t count = std::get<1>(peak);
+        auto range = std::get<2>(peak);
+        
+        EXPECT_LT(index, hist.getResolution());
+        EXPECT_GT(count, 0);
+        EXPECT_LT(range.first, range.second);
+    }
+}
+
+// 测试空直方图的波峰检测
+TEST_F(HistogramTest, PeakDetectionEmptyHistogram) {
+    histogram::Histogram emptyHist(0.0f, 10.0f, 10);
+    
+    auto peaks = emptyHist.findPeaks();
+    auto peaksInfo = emptyHist.getPeaksInfo();
+    
+    EXPECT_TRUE(peaks.empty());
+    EXPECT_TRUE(peaksInfo.empty());
+}
+
+// 测试单峰值直方图
+TEST_F(HistogramTest, PeakDetectionSinglePeak) {
+    histogram::Histogram hist(0.0f, 10.0f, 20);
+    
+    std::mt19937 gen(42);
+    std::normal_distribution<float> dist(5.0f, 1.0f);
+    
+    for (int i = 0; i < 1000; ++i) {
+        hist.addData(dist(gen));
+    }
+    
+    auto peaks = hist.findPeaks(0.05f);
+    EXPECT_GE(peaks.size(), 1);
+}
+
+// 测试波峰检测SVG导出
+TEST_F(HistogramTest, PeakDetectionSVGExport) {
+    histogram::Histogram hist(0.0f, 20.0f, 40);
+    
+    // 生成多峰值数据
+    std::mt19937 gen(789);
+    std::normal_distribution<float> dist1(4.0f, 0.8f);
+    std::normal_distribution<float> dist2(12.0f, 1.2f);
+    std::normal_distribution<float> dist3(16.0f, 0.9f);
+    
+    for (int i = 0; i < 400; ++i) hist.addData(dist1(gen));
+    for (int i = 0; i < 600; ++i) hist.addData(dist2(gen));
+    for (int i = 0; i < 500; ++i) hist.addData(dist3(gen));
+    
+    // 检测波峰
+    auto peaksInfo = hist.getPeaksInfo(0.1f);
+    
+    // 导出带波峰标记的SVG
+    EXPECT_NO_THROW({
+        histogram::SVGExporter::exportHistogramWithPeaks(hist, peaksInfo, "test_output/histogram_with_peaks.svg", 800, 600, "Histogram with Detected Peaks");
+    });
+    
+    EXPECT_TRUE(fs::exists("test_output/histogram_with_peaks.svg"));
 }
 
 int main(int argc, char **argv) {

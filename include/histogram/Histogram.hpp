@@ -83,6 +83,38 @@ public:
      * @return bin索引，如果超出范围返回-1
      */
     int getBinIndex(float value) const;
+    
+    /**
+     * @brief 获取最大bin的计数值和索引
+     * @return pair(最大计数值, bin索引)
+     */
+    std::pair<size_t, size_t> getMaxBin() const;
+    
+    /**
+     * @brief 获取最大bin计数值
+     * @return 最大bin计数值
+     */
+    size_t getMaxBinCount() const;
+    
+    /**
+     * @brief 获取最大bin的索引
+     * @return 最大bin索引
+     */
+    size_t getMaxBinIndex() const;
+    
+    /**
+     * @brief 检测直方图中的所有波峰
+     * @param minProminence 最小突出度阈值（相对于最大bin的百分比，0-1）
+     * @return 波峰索引向量
+     */
+    std::vector<size_t> findPeaks(float minProminence = 0.1f) const;
+    
+    /**
+     * @brief 获取波峰的详细信息
+     * @param minProminence 最小突出度阈值（相对于最大bin的百分比，0-1）
+     * @return 波峰信息向量（索引，计数值，值范围）
+     */
+    std::vector<std::tuple<size_t, size_t, std::pair<float, float>>> getPeaksInfo(float minProminence = 0.1f) const;
 
 private:
     float min_;                 // 最小值
