@@ -6,8 +6,26 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+
+if(CMAKE_BUILD_TYPE)
+    message(STATUS "Build type specified as ${CMAKE_BUILD_TYPE}")
+else()
+    message(STATUS "Build type not specified, using Release")
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+    set(IS_DEBUG TRUE)
+else()
+    set(IS_DEBUG FALSE)
+endif()
+
+set(EXECUTABLE_OUTPUT_PATH "${PROJECT_BINARY_DIR}")
+set(LIBRARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}")
+
 # 添加包含目录
-include_directories(include)
+include_directories(src)
+
 
 # 创建库
 add_library(histogram
@@ -23,26 +41,8 @@ enable_testing()
 # 查找GoogleTest
 find_package(GTest REQUIRED)
 
-# 添加测试可执行文件
-add_executable(test_histogram test/test_histogram.cpp)
-target_link_libraries(test_histogram histogram GTest::GTest GTest::Main)
-
-# 添加测试
-add_test(NAME histogram_tests COMMAND test_histogram)
-
-# 添加示例
-add_executable(demo examples/demo.cpp)
-target_link_libraries(demo histogram)
-
-add_executable(peak_detection examples/peak_detection.cpp)
-target_link_libraries(peak_detection histogram)
-
-add_executable(peak_detection_advanced examples/peak_detection_advanced.cpp)
-target_link_libraries(peak_detection_advanced histogram)
-
-add_executable(peak_visualization examples/peak_visualization.cpp)
-target_link_libraries(peak_visualization histogram)
-
+add_subdirectory(test)
+add_subdirectory(examples)
 # 安装配置
 install(TARGETS histogram DESTINATION lib)
 install(DIRECTORY include/histogram DESTINATION include)

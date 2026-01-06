@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include "histogram/Histogram.hpp"
-#include "histogram/CDF.hpp"
-#include "histogram/GaussianFilter.hpp"
-#include "histogram/SVGExporter.hpp"
+#include "Histogram.hpp"
+#include "CDF.hpp"
+#include "GaussianFilter.hpp"
+#include "SVGExporter.hpp"
 #include <vector>
 #include <random>
 #include <tuple>

@@ -1,4 +1,4 @@
-#include "histogram/SVGExporter.hpp"
+#include "SVGExporter.hpp"
 #include <fstream>
 #include <sstream>
 #include <iomanip>

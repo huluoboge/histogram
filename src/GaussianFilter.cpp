@@ -1,4 +1,4 @@
-#include "histogram/GaussianFilter.hpp"
+#include "GaussianFilter.hpp"
 #include <vector>
 #include <cmath>
 #include <algorithm>

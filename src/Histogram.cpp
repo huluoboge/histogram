@@ -1,6 +1,7 @@
-#include "histogram/Histogram.hpp"
+#include "Histogram.hpp"
 #include <cmath>
 #include <algorithm>
+#include <stdexcept>
 
 namespace histogram {
 
@@ -87,6 +88,77 @@ size_t Histogram::getMaxBinCount() const {
 
 size_t Histogram::getMaxBinIndex() const {
     return getMaxBin().second;
+}
+
+void Histogram::merge(const Histogram& other) {
+    // 创建一个新的临时直方图，范围是两个直方图的并集
+    float newMin = std::min(min_, other.min_);
+    float newMax = std::max(max_, other.max_);
+    
+    // 如果范围没有变化，直接合并bins
+    if (newMin == min_ && newMax == max_ && 
+        std::abs((newMax - newMin) / resolution_ - other.binWidth_) < 1e-9) {
+        // 两个直方图具有相同范围和bin宽度，可以直接合并
+        for (size_t i = 0; i < bins_.size(); ++i) {
+            bins_[i] += other.bins_[i];
+        }
+        totalCount_ += other.totalCount_;
+        return;
+    }
+    
+    // 需要重新分配bins
+    size_t newResolution = resolution_;
+    float newBinWidth = (newMax - newMin) / newResolution;
+    
+    std::vector<size_t> newBins(newResolution, 0);
+    size_t newTotalCount = 0;
+    
+    // 将当前直方图的数据重新分配到新bins中
+    for (size_t i = 0; i < resolution_; ++i) {
+        size_t count = bins_[i];
+        if (count > 0) {
+            // 获取当前bin的中心点
+            float binMin = min_ + i * binWidth_;
+            float binMax = (i == resolution_ - 1) ? max_ : binMin + binWidth_;
+            float binCenter = (binMin + binMax) / 2.0f;
+            
+            // 计算在新直方图中的索引
+            int newIndex = static_cast<int>((binCenter - newMin) / newBinWidth);
+            if (newIndex >= 0 && newIndex < static_cast<int>(newResolution)) {
+                newBins[newIndex] += count;
+                newTotalCount += count;
+            } else {
+                newTotalCount += count; // 仍然计入总数量，即使在范围外
+            }
+        }
+    }
+    
+    // 将另一个直方图的数据也重新分配到新bins中
+    for (size_t i = 0; i < other.resolution_; ++i) {
+        size_t count = other.bins_[i];
+        if (count > 0) {
+            // 获取other直方图当前bin的中心点
+            float binMin = other.min_ + i * other.binWidth_;
+            float binMax = (i == other.resolution_ - 1) ? other.max_ : binMin + other.binWidth_;
+            float binCenter = (binMin + binMax) / 2.0f;
+            
+            // 计算在新直方图中的索引
+            int newIndex = static_cast<int>((binCenter - newMin) / newBinWidth);
+            if (newIndex >= 0 && newIndex < static_cast<int>(newResolution)) {
+                newBins[newIndex] += count;
+                newTotalCount += count;
+            } else {
+                newTotalCount += count; // 仍然计入总数量，即使在范围外
+            }
+        }
+    }
+    
+    // 更新当前直方图的参数
+    min_ = newMin;
+    max_ = newMax;
+    binWidth_ = newBinWidth;
+    bins_ = std::move(newBins);
+    totalCount_ = newTotalCount;
 }
 
 std::vector<size_t> Histogram::findPeaks(float minProminence) const {
